@@ -47,7 +47,7 @@ namespace Jaison
         public string Serialize(object o)
         {
             JaisonWriter w = GetWriter();
-            w.Reset(o, 2);
+            w.Reset(o, indent);
             return w.Serialize();
         }
 
