@@ -1,6 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading;
+using Jaison.Exceptions;
 
 namespace Jaison
 {
@@ -22,7 +22,7 @@ namespace Jaison
         {
             ordered = on;
             // TODO: Implement WithOrdered() 
-            throw new NotImplementedException("No generic eqivalent C# equivalent of Java's LinkedHashMap");
+            throw new JaisonException("No generic eqivalent C# equivalent of Java's LinkedHashMap exists");
             //return this;
         }
 

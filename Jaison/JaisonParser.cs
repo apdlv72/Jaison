@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Text;
+using Jaison.Exceptions;
+using Jaison.Containers;
 
 namespace Jaison
 {
@@ -141,7 +142,7 @@ namespace Jaison
                 string key = Parsestring();
                 if (strict && map.ContainsKey(key))
                 {
-                    throw new JsonException("Key appeared more than once in " + name + ": \"" + key + "\"", pos, line);
+                    throw new ParseException("Key appeared more than once in " + name + ": \"" + key + "\"", pos, line);
                 }
 
                 c = SkipWhitespace();
@@ -365,7 +366,8 @@ namespace Jaison
                     // negative/positive numbers
                     case '-':
                     case '+':
-                        // could have better checking here .. but will throw NumberFiormatException anyway beow.
+                        // TODO: Could have better checking here ..
+                        // but will throw Exception anyway below.
                         break;
                     case '.':
                         if (fractional)
@@ -463,7 +465,6 @@ namespace Jaison
          */
         protected char SkipWhitespace()
         {
-
             char c = data[pos];
             do
             {
@@ -481,11 +482,11 @@ namespace Jaison
                 }
                 catch (Exception)
                 {
-                    throw new JsonException("Unexpected end of input", pos, line);
+                    throw new ParseException("Unexpected end of input", pos, line);
                 }
             }
             while (pos < data.Length);
-            throw new JsonException("Unexpected end of input", pos, line);
+            throw new ParseException("Unexpected end of input", pos, line);
         }
 
         private ISealableList newList()
@@ -535,320 +536,7 @@ namespace Jaison
             string msg = string.Format(
                 "{0}: Unexpected input at string index {1}, line {2} at '{3}{4}'",
                 method, pos, line, rest, dots);
-            throw new JsonException(msg, pos, line);
-        }
-
-        public interface ISealableDictionary : IDictionary<string, object>
-        {
-            void Seal();
-        }
-
-        public interface ISealableList : IList<object>
-        {
-            void Seal();
-        }
-
-        private class UnsealedList : List<object>, ISealableList
-        {
-            public void Seal()
-            {
-                // don't do anything here
-            }
-        }
-
-        private class SealedList : List<object>, ISealableList
-        {
-            public new void Add(Object e)
-            {
-                Check();
-                base.Add(e);
-            }
-
-            public new bool Remove(Object o)
-            {
-                Check();
-                return base.Remove(o);
-            }
-
-            public new void AddRange(IEnumerable<object> c)
-            {
-                Check();
-                base.AddRange(c);
-            }
-
-            public new void RemoveAll(Predicate<object> c)
-            {
-                Check();
-                base.RemoveAll(c);
-            }
-
-            public new void Clear()
-            {
-                Check();
-                base.Clear();
-            }
-
-            public new void Insert(int index, object element)
-            {
-                Check();
-                base.Insert(index, element);
-            }
-
-            public void Seal()
-            {
-                sealed_ = true;
-            }
-
-            protected void Check()
-            {
-                if (sealed_)
-                {
-                    throw new ImmutableException("List is read only");
-                }
-            }
-
-            //private static readonly long serialVersionUID = -2252514607541446347L;
-            private bool sealed_;
-
-        }
-
-        private class SealedDictionary : Dictionary<string,object>, ISealableDictionary
-        {
-            public new void Add(string key, object value)
-            {
-                Check();
-                base.Add(key, value);
-            }
-
-            public new bool Remove(string key)
-            {
-                Check();
-                return base.Remove(key);
-            }
-
-            public new void Clear()
-            {
-                Check();
-                base.Clear();
-            }
-
-            public void Seal()
-            {
-                _sealed = true;
-            }
-
-            public void Check()
-            {
-                if (_sealed)
-                {
-                    throw new ImmutableException("Dictionary is read only");
-                }
-            }
-
-            public new string ToString()
-            {
-                return base.ToString();
-            }
-
-            public bool Contains(KeyValuePair<string, object> item)
-            {
-                object value = null;
-                if (TryGetValue(item.Key, out value))
-                {
-                    return value.Equals(item.Value);
-                }
-                return false;
-            }
-
-
-            private bool _sealed;
-
-        }
-
-        private class UnsealedDictionary : Dictionary<string, object>, ISealableDictionary
-        {
-            public void Seal()
-            {
-            }
-        }
-
-        // TODO: Fully implement UnSealedOrderedDictionary
-        private class UnsealedOrderedDictionary : OrderedDictionary, ISealableDictionary
-        {
-            public new void Clear()
-            {
-                Check();
-                base.Clear();
-            }
-
-            public void Seal()
-            {
-                _sealed = true;
-            }
-
-            public void Check()
-            {
-                if (_sealed)
-                {
-                    throw new ImmutableException("Dictionary is read only");
-                }
-            }
-
-            public bool Remove(KeyValuePair<string, object> item)
-            {
-                if (Contains(item))
-                {
-                    base.Remove(item.Key);
-                    return true;
-                }
-                return false;
-            }
-
-            IEnumerator<KeyValuePair<string, object>> IEnumerable<KeyValuePair<string, object>>.GetEnumerator()
-            {
-                System.Collections.IDictionaryEnumerator e = base.GetEnumerator();
-                // TODO: Just casting is probbaly not sufficient here.
-                return (System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object>>)e;
-            }
-
-            public void Add(string key, object value)
-            {
-                base.Add(key, value);
-            }
-
-            public bool ContainsKey(string key)
-            {
-                return base.Contains(key);
-            }
-
-            public bool Remove(string key)
-            {
-                if (Contains(key))
-                {
-                    base.Remove(key);
-                    return true;
-                }
-                return false;
-            }
-
-            public bool TryGetValue(string key, out object value)
-            {
-                try
-                {
-                    value = base[key];
-                    return true;
-                }
-                catch (SystemException)
-                {
-                    value = null;
-                    return false;
-                }
-            }
-
-            public void Add(KeyValuePair<string, object> item)
-            {
-                base.Add(item.Key, item.Value);
-            }
-
-            public bool Contains(KeyValuePair<string, object> item)
-            {
-                object value = null;
-                if (TryGetValue(item.Key, out value))
-                {
-                    return (null == value && null == item.Value) || (null != value && value.Equals(item.Value));
-                }
-                return false;
-            }
-
-            public void CopyTo(KeyValuePair<string, object>[] array, int arrayIndex)
-            {
-                throw new NotImplementedException();
-            }
-
-            // TODO: Just casting is probbaly not sufficient here.
-            ICollection<string> IDictionary<string, object>.Keys => (System.Collections.Generic.ICollection<string>)base.Keys;
-
-            // TODO: Just casting is probbaly not sufficient here.
-            ICollection<object> IDictionary<string, object>.Values => (System.Collections.Generic.ICollection<object>)base.Values;
-
-            public object this[string key]
-            {
-                get => base[key];
-                // TODO: Implement set
-                set => throw new NotImplementedException();
-            }
-
-            private bool _sealed;
-        }
-
-        private class SealedOrderedDictionary : UnsealedOrderedDictionary
-        {
-            public new void Seal()
-            {
-                // just don't
-            }
-        }
-
-        private class SealedSortedDictionary : SortedDictionary<string, object>, ISealableDictionary
-        {
-            public new void Add(string key, object value)
-            {
-                Check();
-                base.Add(key, value);
-            }
-
-            public new object Remove(string key)
-            {
-                Check();
-                return base.Remove(key);
-            }
-
-            public new void Clear()
-            {
-                Check();
-                base.Clear();
-            }
-
-            public void Seal()
-            {
-                _sealed = true;
-            }
-
-            public void Check()
-            {
-                if (_sealed)
-                {
-                    throw new ImmutableException("Dictionary is read only");
-                }
-            }
-
-            private bool _sealed;
-        }
-
-        private class UnsealedSortedDictionary : SortedDictionary<string, object>, ISealableDictionary
-        {
-            public void Seal()
-            {
-            }
-        }
-
-        private class JsonException : Exception
-        {
-            private int pos;
-            private int line;
-
-            public JsonException(string message, int pos, int line) : base(message)
-            {
-                this.pos = pos;
-                this.line = line;
-            }
-        }
-
-        private class ImmutableException : Exception
-        {
-            public ImmutableException(string message) : base(message)
-            {
-            }
+            throw new ParseException(msg, pos, line);
         }
 
         private StringBuilder sb;
@@ -859,10 +547,10 @@ namespace Jaison
         private Dictionary<string, object> variables;
 
         private static readonly string DESERIALIZE_METHOD = "deserialize";
-        private static readonly string PARSE_STRUCT_METHOD = "parseStruct";
         private static readonly string PARSE_ARRAY_METHOD = "parseArray";
-        private static readonly string PARSE_SPECIALM_ETHOD = "parseSpecial";
+        private static readonly string PARSE_STRUCT_METHOD = "parseStruct";
         private static readonly string PARSE_NUMBER_METHOD = "parseNumber";
+        private static readonly string PARSE_SPECIALM_ETHOD = "parseSpecial";
 
         private bool strict = true;
         private bool sorted;

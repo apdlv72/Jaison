@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using Jaison.Exceptions;
 
 namespace Jaison
 {
@@ -250,11 +250,9 @@ namespace Jaison
             //output.Append(INDENTATION, 0, indent);
         }
 
-
-        private void EscapeCharWise(string input)
+        private void EscapeCharWise(string str)
         {
-
-            char[] inp = input.ToCharArray();
+            char[] inp = str.ToCharArray();
             int len = inp.Length;
             //char[] out = new char[in.length*2];
 
@@ -302,9 +300,9 @@ namespace Jaison
             output.Append('"');
         }
 
-        private void Escape(string input)
+        private void Escape(string str)
         {
-            char[] inp = input.ToCharArray();
+            char[] inp = str.ToCharArray();
             int len = inp.Length;
             char[] outp = new char[inp.Length * 2];
 
@@ -368,18 +366,6 @@ namespace Jaison
             {
                 INDENTATION[i] = ' ';
             }
-        }
-    }
-
-    class UnsupportedTypeException : SystemException
-    {
-        private object p1;
-        private object p2;
-
-        public UnsupportedTypeException(object p1, object p2)
-        {
-            this.p1 = p1;
-            this.p2 = p2;
         }
     }
 }
