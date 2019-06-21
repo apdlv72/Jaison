@@ -8,13 +8,14 @@ parser instances in thread local storage because JaisonParser was designed for s
 
 Example:
 
-	    string JSON_STRING = "{ \"string\": \"value\" }";
 
-            Jai j = new Jai();
-            IDictionary<string, object> dict = j.Deserialize<IDictionary<string, object>>("{ \"a\": 1 }");
+    string JSON_STRING = "{ \"string\": \"value\" }";
 
-            dict.Add("b", 2);
-            string json = j.Serialize(dict);
-            Console.WriteLine("json: " + actual);
+    Jai j = new Jai().withSorted(true).withImmutable(false);
+    IDictionary<string, object> dict = j.Deserialize<IDictionary<string, object>>("{ \"a\": 1 }");
+
+    dict.Add("b", 2);
+    string json = j.Serialize(dict);
+    Console.WriteLine("json: " + actual);
 
 
